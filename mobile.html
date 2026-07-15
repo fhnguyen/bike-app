@@ -167,13 +167,19 @@
   let openWeeks = new Set();
 
   // Pre-configured connection — no setup needed
+  const CONFIG_VERSION = 2;
   const DEFAULT_CONFIG = {
     fileId: '1n0IMR_zHy4HDhVdvsIeguY_YaJjVeFgm',
     apiKey: 'AIzaSyA6Vm1aZpN8rpkKWjFGI5u5Zl_FITjqYPQ'
   };
 
   function getConfig() {
-    try { return JSON.parse(localStorage.getItem('bw_config')) || DEFAULT_CONFIG; }
+    try {
+      const stored = JSON.parse(localStorage.getItem('bw_config'));
+      // Ignore configs saved by older versions of this page
+      if (stored && stored.v === CONFIG_VERSION) return stored;
+      return DEFAULT_CONFIG;
+    }
     catch { return DEFAULT_CONFIG; }
   }
 
@@ -181,7 +187,7 @@
     const fileId = document.getElementById('cfgFileId').value.trim();
     const apiKey = document.getElementById('cfgApiKey').value.trim();
     if (!fileId || !apiKey) return;
-    localStorage.setItem('bw_config', JSON.stringify({ fileId, apiKey }));
+    localStorage.setItem('bw_config', JSON.stringify({ fileId, apiKey, v: CONFIG_VERSION }));
     showMain();
     loadData();
   }
