@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Bike Workouts</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f3;
+    --card: #fff;
+    --border: #e0e0dc;
+    --muted: #888;
+    --text: #1a1a1a;
+    --green: #2d8a3e;
+    --blue: #1a5fa0;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px 12px 60px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; padding: 0 2px;
+  }
+  h1 { font-size: 18px; font-weight: 600; }
+
+  .refresh-btn {
+    font-size: 13px; font-weight: 500; padding: 7px 14px;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card); color: #555; cursor: pointer;
+  }
+  .refresh-btn:active { background: #f0f0ee; }
+
+  .ftp-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+  }
+  .ftp-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .ftp-input-wrap { display: flex; align-items: center; gap: 6px; }
+  .ftp-input {
+    width: 80px; padding: 6px 8px; font-size: 18px; font-weight: 600;
+    font-family: 'Courier New', monospace; text-align: center;
+    border: 1px solid #d0d0cc; border-radius: 8px; outline: none;
+  }
+  .ftp-unit { font-size: 14px; color: var(--muted); font-weight: 500; }
+
+  .status {
+    font-size: 12px; color: var(--muted); text-align: center;
+    margin-bottom: 14px; font-family: 'Courier New', monospace;
+  }
+  .status.err { color: #c0392b; }
+
+  .week-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 10px; overflow: hidden;
+  }
+
+  .week-toggle {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: none; border: none; cursor: pointer;
+    font-size: 15px; font-weight: 600; color: var(--text);
+    font-family: inherit;
+  }
+  .week-toggle .chev { color: var(--muted); font-size: 13px; transition: transform 0.2s; }
+  .week-toggle.open .chev { transform: rotate(180deg); }
+  .week-toggle .wo-count { font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 8px; }
+
+  .week-body { display: none; border-top: 1px solid var(--border); }
+  .week-body.open { display: block; }
+
+  .workout {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .workout:last-child { border-bottom: none; }
+
+  .wo-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+
+  .wo-text {
+    font-family: 'Courier New', monospace;
+    font-size: 13px; line-height: 1.9; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .wo-text .watts { color: var(--blue); font-weight: 700; }
+  .wo-text .sl { color: var(--muted); font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .wo-text .ll { color: var(--muted); }
+
+  /* Setup screen */
+  .setup {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 16px;
+  }
+  .setup h2 { font-size: 16px; margin-bottom: 6px; }
+  .setup p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+  .setup label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; }
+  .setup input {
+    width: 100%; padding: 10px 12px; font-size: 14px;
+    border: 1px solid #d0d0cc; border-radius: 8px; outline: none;
+    margin-bottom: 14px; font-family: 'Courier New', monospace;
+  }
+  .setup input:focus { border-color: #888; }
+  .setup-btn {
+    width: 100%; padding: 12px; font-size: 15px; font-weight: 600;
+    border-radius: 10px; border: none; cursor: pointer;
+    background: var(--green); color: #fff;
+  }
+  .setup-btn:active { background: #267a36; }
+  .setup-note { font-size: 11px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+  .change-config {
+    display: block; margin: 24px auto 0; background: none; border: none;
+    color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="setupView" style="display:none;">
+  <div class="header"><h1>🚴 Bike Workouts</h1></div>
+  <div class="setup">
+    <h2>One-time setup</h2>
+    <p>Connect this page to your workout file in Google Drive. You'll need your file ID and a Google API key (see instructions from Claude).</p>
+    <label>Google Drive File ID</label>
+    <input id="cfgFileId" placeholder="e.g. 1AbC2dEfG3hIjK..." autocapitalize="off" autocorrect="off">
+    <label>Google API Key</label>
+    <input id="cfgApiKey" placeholder="e.g. AIzaSy..." autocapitalize="off" autocorrect="off">
+    <button class="setup-btn" onclick="saveConfig()">Connect</button>
+    <div class="setup-note">These are stored only on this phone. The file must be shared as "Anyone with the link can view."</div>
+  </div>
+</div>
+
+<div id="mainView" style="display:none;">
+  <div class="header">
+    <h1>🚴 Bike Workouts</h1>
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+  </div>
+
+  <div class="ftp-bar">
+    <span class="ftp-label">Max watts</span>
+    <div class="ftp-input-wrap">
+      <input class="ftp-input" id="ftp" type="number" value="300" min="1" max="9999">
+      <span class="ftp-unit">W</span>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div id="weekList"></div>
+
+  <button class="change-config" onclick="resetConfig()">Change Drive connection</button>
+</div>
+
+<script>
+  let weeksData = [];
+  let openWeeks = new Set();
+
+  function getConfig() {
+    try { return JSON.parse(localStorage.getItem('bw_config')) || null; }
+    catch { return null; }
+  }
+
+  function saveConfig() {
+    const fileId = document.getElementById('cfgFileId').value.trim();
+    const apiKey = document.getElementById('cfgApiKey').value.trim();
+    if (!fileId || !apiKey) return;
+    localStorage.setItem('bw_config', JSON.stringify({ fileId, apiKey }));
+    showMain();
+    loadData();
+  }
+
+  function resetConfig() {
+    localStorage.removeItem('bw_config');
+    location.reload();
+  }
+
+  function showMain() {
+    document.getElementById('setupView').style.display = 'none';
+    document.getElementById('mainView').style.display = 'block';
+  }
+
+  function showSetup() {
+    document.getElementById('setupView').style.display = 'block';
+    document.getElementById('mainView').style.display = 'none';
+  }
+
+  function getFTP() { return parseFloat(document.getElementById('ftp').value) || 0; }
+
+  function processLine(line, ftp) {
+    return line
+      .replace(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)%/g, (_, a, b) =>
+        `<span class="watts">${Math.round(ftp * a / 100)}-${Math.round(ftp * b / 100)}W</span>`)
+      .replace(/(\d+(?:\.\d+)?)%/g, (_, p) =>
+        `<span class="watts">${Math.round(ftp * p / 100)}W</span>`);
+  }
+
+  function renderWorkout(text) {
+    const ftp = getFTP();
+    return text.split('\n').map(line => {
+      const esc = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const out = processLine(esc, ftp);
+      if (/^\d+\s+(set|round)/i.test(line.trim())) return `<span class="sl">${out}</span>`;
+      if (/^\.\.\.?\s*into/i.test(line.trim()) || /^into/i.test(line.trim())) return `<span class="ll">${out}</span>`;
+      return out;
+    }).join('\n');
+  }
+
+  function toggleWeek(i) {
+    if (openWeeks.has(i)) openWeeks.delete(i); else openWeeks.add(i);
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById('weekList');
+    list.innerHTML = weeksData.map((week, i) => `
+      <div class="week-card">
+        <button class="week-toggle ${openWeeks.has(i) ? 'open' : ''}" onclick="toggleWeek(${i})">
+          <span>Week ${i + 1}<span class="wo-count">${week.workouts.length} workout${week.workouts.length > 1 ? 's' : ''}</span></span>
+          <span class="chev">▼</span>
+        </button>
+        <div class="week-body ${openWeeks.has(i) ? 'open' : ''}">
+          ${week.workouts.map((wo, j) => `
+            <div class="workout">
+              <div class="wo-title">Workout ${j + 1}</div>
+              <div class="wo-text">${renderWorkout(wo)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function loadData() {
+    const cfg = getConfig();
+    if (!cfg) { showSetup(); return; }
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = 'Loading…';
+    statusEl.classList.remove('err');
+    try {
+      const url = `https://www.googleapis.com/drive/v3/files/${cfg.fileId}?alt=media&key=${cfg.apiKey}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      weeksData = (data.weeks || []).map(w => ({ workouts: w.workouts || [] }));
+      if (data.ftp) document.getElementById('ftp').value = data.ftp;
+      const now = new Date();
+      statusEl.textContent = `Updated ${now.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'})}`;
+      render();
+    } catch (e) {
+      statusEl.textContent = 'Could not load — check sharing settings & connection, then tap Refresh';
+      statusEl.classList.add('err');
+    }
+  }
+
+  document.getElementById('ftp').addEventListener('input', render);
+
+  if (getConfig()) { showMain(); loadData(); }
+  else { showSetup(); }
+</script>
+</body>
+</html>
